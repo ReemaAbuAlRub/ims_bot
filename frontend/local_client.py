@@ -4,9 +4,9 @@ Mirrors BackendClient's interface but calls the backend package directly instead
 over HTTP, so the whole app can run as one Streamlit process. The backend package
 itself stays free of any Streamlit or frontend imports.
 """
-from backend.api.dependencies import get_conversation_service
 from backend.config import get_settings
 from backend.core.chat_service import ChatService
+from backend.core.factory import get_conversation_service
 from backend.db.repository import ThreadRepository
 from backend.db.session import get_session_factory, init_database
 
