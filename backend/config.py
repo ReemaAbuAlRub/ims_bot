@@ -32,6 +32,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = PROJECT_ROOT / ".env"
+        extra = "ignore"  # .env is shared with the frontend, which sets BACKEND_URL
 
 
 @lru_cache

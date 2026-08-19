@@ -1,0 +1,4 @@
+# Frontend dependencies. Streamlit Community Cloud installs from the repo root,
+# so this mirrors frontend/requirements.txt. Backend deps are in backend/requirements.txt.
+streamlit
+requests

@@ -14,14 +14,24 @@ from frontend.ui import theme
 from frontend.ui.chat_view import ChatView
 from frontend.ui.sidebar import SidebarView
 
-BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
 _ACTIVE_THREAD_KEY = "active_thread_id"
+_DEFAULT_BACKEND_URL = "http://localhost:8000"
+
+
+def get_backend_url() -> str:
+    """Reads the backend URL from Streamlit secrets, then the environment."""
+    try:
+        if "BACKEND_URL" in st.secrets:
+            return st.secrets["BACKEND_URL"]
+    except FileNotFoundError:
+        pass
+    return os.environ.get("BACKEND_URL", _DEFAULT_BACKEND_URL)
 
 
 @st.cache_resource
 def get_backend_client() -> BackendClient:
     """Returns a cached HTTP client for the FastAPI backend."""
-    return BackendClient(BACKEND_URL)
+    return BackendClient(get_backend_url())
 
 
 def resolve_active_thread(client: BackendClient, session_id: str, threads: list[dict]) -> dict:

@@ -1,3 +1,13 @@
+---
+title: Almamlaka Bot API
+emoji: 📺
+colorFrom: red
+colorTo: gray
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # Almamlaka TV Digital Expansion Initiative — Chatbot
 
 A RAG chatbot that answers questions strictly from the three project PDFs in `artifacts/`, with

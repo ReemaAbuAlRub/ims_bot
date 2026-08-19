@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.git/
+.streamlit/
+frontend/
+backend/index/
+backend/data/
+README.md
+Requirements.md
