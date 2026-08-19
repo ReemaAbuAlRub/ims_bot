@@ -1,2 +1,4 @@
+# Frontend-only deps, for running the Streamlit UI against a remote backend
+# (two-service mode). For the single-process deployment use the root requirements.txt.
 streamlit
 requests

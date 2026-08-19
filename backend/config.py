@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     database_url: str = _SQLITE_FALLBACK_URL
     max_history_turns: int = 12
     llm_model: str = "claude-sonnet-5"
-    embedding_model: str = "intfloat/multilingual-e5-base"
+    embedding_model: str = "intfloat/multilingual-e5-small"
     llm_max_tokens: int = 1024
     top_k: int = 8
 

@@ -15,23 +15,33 @@ from frontend.ui.chat_view import ChatView
 from frontend.ui.sidebar import SidebarView
 
 _ACTIVE_THREAD_KEY = "active_thread_id"
-_DEFAULT_BACKEND_URL = "http://localhost:8000"
 
 
-def get_backend_url() -> str:
-    """Reads the backend URL from Streamlit secrets, then the environment."""
+def load_secrets_into_env() -> None:
+    """Exposes Streamlit Cloud secrets as env vars so backend settings can read them."""
     try:
-        if "BACKEND_URL" in st.secrets:
-            return st.secrets["BACKEND_URL"]
+        secrets = dict(st.secrets)
     except FileNotFoundError:
-        pass
-    return os.environ.get("BACKEND_URL", _DEFAULT_BACKEND_URL)
+        return
+    for key, value in secrets.items():
+        if isinstance(value, str):
+            os.environ.setdefault(key, value)
+
+
+def get_backend_url() -> str | None:
+    """Returns the remote backend URL, or None when the backend runs in-process."""
+    return os.environ.get("BACKEND_URL") or None
 
 
 @st.cache_resource
-def get_backend_client() -> BackendClient:
-    """Returns a cached HTTP client for the FastAPI backend."""
-    return BackendClient(get_backend_url())
+def get_backend_client():
+    """Returns an HTTP client when BACKEND_URL is set, else an in-process client."""
+    backend_url = get_backend_url()
+    if backend_url:
+        return BackendClient(backend_url)
+    from frontend.local_client import LocalBackendClient
+
+    return LocalBackendClient()
 
 
 def resolve_active_thread(client: BackendClient, session_id: str, threads: list[dict]) -> dict:
@@ -51,6 +61,7 @@ def resolve_active_thread(client: BackendClient, session_id: str, threads: list[
 def main() -> None:
     """Renders the branded chat page and drives one request/response cycle per turn."""
     theme.configure_page()
+    load_secrets_into_env()
     client = get_backend_client()
     session_id = SessionIdentity().get_or_create()
     view = ChatView()

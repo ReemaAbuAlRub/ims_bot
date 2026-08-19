@@ -1,4 +1,18 @@
-# Frontend dependencies. Streamlit Community Cloud installs from the repo root,
-# so this mirrors frontend/requirements.txt. Backend deps are in backend/requirements.txt.
+# Single-app deployment (Streamlit Community Cloud installs from the repo root).
+# The Streamlit UI imports the backend package in-process, so this covers both.
+
+# CPU-only torch: the default Linux wheel bundles CUDA and is several GB larger,
+# which blows past Community Cloud's resource limits.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.9.1+cpu
+
 streamlit
 requests
+anthropic
+sentence-transformers
+faiss-cpu
+pypdf
+numpy
+sqlalchemy>=2.0
+psycopg[binary]
+pydantic-settings

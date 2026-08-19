@@ -1,13 +1,3 @@
----
-title: Almamlaka Bot API
-emoji: 📺
-colorFrom: red
-colorTo: gray
-sdk: docker
-app_port: 7860
-pinned: false
----
-
 # Almamlaka TV Digital Expansion Initiative — Chatbot
 
 A RAG chatbot that answers questions strictly from the three project PDFs in `artifacts/`, with
@@ -16,13 +6,21 @@ prompt-injection resistance.
 
 ## Architecture
 
-- **`backend/`** — FastAPI service (OOP, PEP8). Ingests the PDFs into a local FAISS index
-  (`intfloat/multilingual-e5-base` embeddings) and exposes the chat API. All RAG logic
-  (loading, chunking, retrieval, prompting, the Claude call) and all persistence live here.
-- **`frontend/`** — Streamlit app. A thin client: renders the chat UI and calls the backend
-  over HTTP. Contains no RAG logic and stores no chat data.
+- **`backend/`** — the whole service layer (OOP, PEP8): PDF loading, chunking, embedding,
+  FAISS retrieval, prompt building, the Claude call, and persistence. Contains no Streamlit
+  imports, and also runs standalone as a FastAPI app.
+- **`frontend/`** — Streamlit app. Renders the chat UI only; contains no RAG logic and stores
+  no chat data itself.
 
-The two run as separate processes and can be deployed independently.
+**Two ways to run the same code:**
+
+| Mode | How the frontend reaches the backend | When |
+|---|---|---|
+| Single process | Imports the backend package directly (`frontend/local_client.py`) | Default, and how it deploys to Streamlit Cloud |
+| Two services | HTTP calls to a running FastAPI server (`frontend/api_client.py`) | When `BACKEND_URL` is set |
+
+Both clients expose the same methods, so `app.py` is identical either way. The split is
+enforced in the code, not by the deployment topology.
 
 ### Data storage
 
@@ -36,7 +34,7 @@ page URL (`?sid=...`), so a visitor's chats come back after a refresh without ne
 - **Deployment**: set `DATABASE_URL` to a hosted Postgres. Streamlit Community Cloud has an
   ephemeral filesystem, so SQLite is *not* viable there.
 
-### API
+### API (two-service mode only)
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -49,47 +47,51 @@ page URL (`?sid=...`), so a visitor's chats come back after a refresh without ne
 
 ## Local setup
 
-1. Create and activate a virtual environment, then install both requirement sets:
+1. Create and activate a virtual environment, then install dependencies:
    ```bash
    python3 -m venv .venv
    source .venv/bin/activate
-   pip install -r backend/requirements.txt -r frontend/requirements.txt
+   pip install -r requirements.txt
    ```
 2. Copy `.env.example` to `.env` and set your key:
    ```bash
    cp .env.example .env
    # edit .env and set ANTHROPIC_API_KEY=sk-ant-...
    ```
-3. (Optional) Pre-build the vector index — otherwise it's built automatically on backend startup:
-   ```bash
-   python -m backend.scripts.ingest
-   ```
-4. Run the backend (from the project root):
-   ```bash
-   uvicorn backend.main:app
-   ```
-   Avoid `--reload` here unless you scope it (`--reload-dir backend`) — by default it watches the
-   entire project root, including `.venv/`, which causes a restart loop that never finishes
-   startup.
-5. In a second terminal, run the frontend:
+3. Run the app:
    ```bash
    streamlit run frontend/app.py
    ```
-   The frontend reads `BACKEND_URL` from the environment (defaults to `http://localhost:8000`).
+   The vector index is built automatically on first run. Leave `BACKEND_URL` unset to run
+   everything in one process.
 
-## Deployment
+### Running as two services (optional)
 
-1. **Database (Neon)**: create a free project at [neon.tech](https://neon.tech), copy its
-   connection string, and convert the driver prefix to `postgresql+psycopg://`, keeping
-   `?sslmode=require`. Tables are created automatically on backend startup — no migration
-   step to run.
-2. **Backend**: deploy to any Python host that runs a long-lived process (e.g. Render, Railway,
-   Fly.io). Set `ANTHROPIC_API_KEY` and `DATABASE_URL` as secrets there. The FAISS index is
-   built automatically on first startup.
-3. **Frontend**: deploy to Streamlit Community Cloud pointed at `frontend/app.py`, with
-   `BACKEND_URL` set (as an app secret) to the deployed backend's public URL.
+```bash
+uvicorn backend.main:app                    # terminal 1
+BACKEND_URL=http://localhost:8000 streamlit run frontend/app.py   # terminal 2
+```
 
-The frontend needs no database credentials — only the backend talks to Postgres.
+Avoid `uvicorn --reload` unless you scope it (`--reload-dir backend`) — by default it watches
+the project root including `.venv/`, causing a restart loop that never finishes startup.
+
+## Deployment (Streamlit Community Cloud)
+
+1. **Database**: create a free project at [neon.tech](https://neon.tech), copy its connection
+   string, and change the driver prefix to `postgresql+psycopg://`, keeping `?sslmode=require`.
+   Tables are created automatically on first run — no migration step.
+2. **App**: at [share.streamlit.io](https://share.streamlit.io), deploy this repo with main file
+   `frontend/app.py`.
+3. **Secrets** (Advanced settings → Secrets):
+   ```toml
+   ANTHROPIC_API_KEY = "sk-ant-..."
+   DATABASE_URL = "postgresql+psycopg://...?sslmode=require"
+   ```
+   Leave `BACKEND_URL` out — its absence is what selects single-process mode.
+
+Notes on the free tier: apps get 690 MB–2.7 GB RAM, which fits this stack. The filesystem is
+ephemeral, so the embedding model and FAISS index are rebuilt on each cold start (~1 min) and
+SQLite would not persist — hence Postgres.
 
 ## Notes
 
