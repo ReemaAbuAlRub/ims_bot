@@ -1,3 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
 .env
-.git
+backend/index/
+backend/data/
 .DS_Store

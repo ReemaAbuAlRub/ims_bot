@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+anthropic
+sentence-transformers
+faiss-cpu
+pypdf
+numpy
+sqlalchemy>=2.0
+psycopg[binary]
